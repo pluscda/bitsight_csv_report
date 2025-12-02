@@ -1,0 +1,17 @@
+{
+  "X-App-Name": "MyEvtFlyApp",
+  "X-Version": "evt1.0.2",
+  "X-Maintainer": "Alex Chen",
+  "Any-Evt-Custom-Header": "evtRuntime-Injected",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'sha256-BRW11F+XaiItAdxu0YAquWG/XkzM6rOGvopDRKa4VzA=' 'unsafe-hashes'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';",
+  "Cache-Control": "no-store, must-revalidate",
+  "X-Content-Type-Options": "nosniff",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "Access-Control-Allow-Origin": "*",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "interest-cohort=()",
+  "X-XSS-Protection": "1; mode=block",
+  "Set-Cookie": "poodle=noodle; Expires=Sun, 22-Feb- 2026 01:00:00 GMT;HttpOnly;Secure; path=/; domain=.evtek.fly.dev"
+}

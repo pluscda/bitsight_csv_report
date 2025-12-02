@@ -1,0 +1,116 @@
+/* 全局樣式 */
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+/* 提示框 */
+.note {
+    background: #fff7d1;
+    border-left: 5px solid #f2c400;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 6px;
+    line-height: 1.6;
+}
+
+/* 表單組件 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Input / Select */
+input[type="file"],
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    background: white;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* 上傳按鈕 */
+button {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #4a8cff;
+    color: white;
+    font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+button:hover {
+    background: #2f6feb;
+}
+
+/* 選擇後列表 (SortableJS) */
+#selected-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+}
+
+#selected-list li {
+    background: #ffffff;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: grab;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#selected-list li:hover {
+    background: #f0f7ff;
+}
+
+/* 結果區 */
+.result {
+    margin-top: 25px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    font-family: Consolas, monospace;
+}
+
+/* Choices.js（多選 UI）微調 */
+.choices__inner {
+    border-radius: 6px !important;
+    padding: 8px !important;
+}
+
+.choices__list--multiple .choices__item {
+    background-color: #4a8cff !important;
+    border-color: #4a8cff !important;
+    padding: 5px 8px !important;
+    border-radius: 4px !important;
+}
+
+.choices__list--multiple .choices__item--highlighted {
+    background-color: #2f6feb !important;
+    border-color: #2f6feb !important;
+}
