@@ -1,9 +1,14 @@
-// Choices.js 初始化
+/* --------------------------------------------------------
+ *  Choices.js 初始化
+ * -------------------------------------------------------- */
 const choices = new Choices('#multi', { removeItemButton: true });
 const selectedList = document.getElementById('selected-list');
 let sumbitted = false;
+const riskVectors = new Set();
 
-// 渲染已選擇的項目
+/* --------------------------------------------------------
+ *  渲染已選擇的項目
+ * -------------------------------------------------------- */
 const render = () => {
     selectedList.innerHTML = '';
     choices.getValue(true).forEach(v => {
@@ -14,10 +19,9 @@ const render = () => {
     });
 };
 
-// 監聽選擇變更
 document.getElementById('multi').addEventListener('change', render);
 
-// Sortable.js 初始化
+// Sortable.js 可排序
 Sortable.create(selectedList, {
     animation: 150,
     onSort: () => {
@@ -32,34 +36,82 @@ render();
 // Reset 按鈕
 document.getElementById("resetBtn").onclick = () => location.reload();
 
-// CSV input 監聽（選擇檔案後自動 POST）
+/* --------------------------------------------------------
+ *  CSV 上傳與解析
+ * -------------------------------------------------------- */
 const csvInput = document.getElementById("csvFile");
 
 const postCSV = async () => {
     if (!csvInput.files.length) return;
+    localStorage.clear();
+
+    const file = csvInput.files[0];
+    const sizeMB = await detectCSVSize(file);
+
+    console.log("CSV 檔案大小 (MB):", sizeMB);
 
     const formData = new FormData();
-    formData.append('csvFile', csvInput.files[0]);
+    formData.append('csvFile', file);
     formData.append('riskVector', document.getElementById('riskVector').value);
 
     const resultDiv = document.getElementById('result');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '處理中...';
+
     updateCreateTableBtn();
 
     const response = await fetch('/upload-csv', { method: 'POST', body: formData });
     const data = await response.json();
     sumbitted = true;
 
-    if(data.totalRecords){
-        // 將 JSON 轉成字串後存入 localStorage
-        localStorage.setItem('csvData', JSON.stringify(data.data));
+    // 解析 CSV 找 risk vector
+    // Papa.parse(file, {
+    //     header: true,
+    //     skipEmptyLines: true,
+    //     complete: function (result) {
+            // const lowerArr = ['severe', 'material', 'moderate'];
+            // result.data.forEach(row => {
+            //     if (lowerArr.includes(String(row["Finding Severity"]).toLowerCase())) {
+            //         riskVectors.add(row["Risk Vector"]);
+            //     }
+            // });
+
+            // createOptionsFromArray([...riskVectors]);
+    //    }
+   // });
+
+    /* --------------------------------------------------------
+     * 儲存資料：< 5MB → localStorage；> 5MB → IndexedDB
+     * -------------------------------------------------------- */
+    if (data.totalRecords) {
+        const jsonStr = JSON.stringify(data.data);
+
+        if (sizeMB <= 5) {
+            localStorage.setItem("csvData", jsonStr);
+            localStorage.setItem("storageMode", "localStorage");
+        } else {
+            await saveToIndexedDB(data.data);
+            localStorage.setItem("storageMode", "indexedDB");
+        }
     }
+
+    /* --------------------------------------------------------
+     *  預覽第一筆資料
+     * -------------------------------------------------------- */
+    const firstRecord = data.data?.[0] ?? null;
 
     resultDiv.innerHTML = `
         <p>總筆數: ${data.totalRecords}</p>
-        <h4>JSON資料:</h4>
-        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+        <h4>第一筆資料 (預覽 JSON)</h4>
+        <pre style="
+            background:#f8f8f8;
+            padding:10px;
+            border-radius:6px;
+            border:1px solid #ddd;
+            overflow:auto;
+        ">
+${firstRecord ? JSON.stringify(firstRecord, null, 2) : "（無資料）"}
+        </pre>
     `;
 
     updateCreateTableBtn();
@@ -67,24 +119,24 @@ const postCSV = async () => {
 
 csvInput.addEventListener('change', postCSV);
 
-// Risk Vector 監聽（改變自動重新送出）
+// Risk Vector 變更時自動重新 POST
 document.getElementById("riskVector").addEventListener("change", () => {
     if (!sumbitted) return;
     postCSV();
 });
 
-// Create Table 按鈕啟用/停用
+/* --------------------------------------------------------
+ * Create Table 按鈕 啟用/停用修正版
+ * -------------------------------------------------------- */
 const createTableBtn = document.getElementById('createTableBtn');
 
 function updateCreateTableBtn() {
-    const resultDiv = document.getElementById('result');
+    const pre = document.querySelector('#result pre');
     let hasData = false;
 
     try {
-        const pre = resultDiv.querySelector('pre');
         if (pre) {
-            const data = JSON.parse(pre.innerText);
-            if (Array.isArray(data) && data.length > 0) hasData = true;
+           hasData = true;
         }
     } catch {
         hasData = false;
@@ -101,31 +153,80 @@ function updateCreateTableBtn() {
     }
 }
 
-// Create Table 按鈕簡化 onclick
-createTableBtn.addEventListener('click', () => {
-    const pre = document.querySelector('#result pre');
-    const data = JSON.parse(pre.innerText);
-
-    let tableHTML = '<table class="table-auto border border-gray-300 w-full">';
-    tableHTML += '<thead><tr>';
-    Object.keys(data[0]).forEach(key => tableHTML += `<th class="border px-2 py-1">${key}</th>`);
-    tableHTML += '</tr></thead><tbody>';
-    data.forEach(row => {
-        tableHTML += '<tr>';
-        Object.values(row).forEach(val => tableHTML += `<td class="border px-2 py-1">${val}</td>`);
-        tableHTML += '</tr>';
-    });
-    tableHTML += '</tbody></table>';
-
-    document.getElementById('result').innerHTML = tableHTML;
-});
-
+/* --------------------------------------------------------
+ *  按下 Create Table 按鈕 → 儲存 header & chinese → 開啟 report.html
+ * -------------------------------------------------------- */
 document.getElementById('createTableBtn').addEventListener('click', () => {
-    const header = choices.getValue(true);
-    // 將 JSON 轉成字串後存入 localStorage
-    localStorage.setItem('header', JSON.stringify(header));
-    const chinese = choices.getValue(); //ex [{value: label}, ..]
-    localStorage.setItem('chinese', JSON.stringify(chinese));
-    // 在新分頁開啟 report.html
+    localStorage.setItem('header', JSON.stringify(choices.getValue(true)));
+    localStorage.setItem('chinese', JSON.stringify(choices.getValue()));
     window.open('report.html', '_blank');
 });
+
+/* --------------------------------------------------------
+ *  Risk Vector 下拉選單動態更新
+ * -------------------------------------------------------- */
+function createOptionsFromArray(array) {
+    const originalSelect = document.getElementById("riskVector");
+    const originalOptions = [...originalSelect.querySelectorAll('option')];
+
+    originalSelect.innerHTML = ""; // 清空
+
+    array.forEach(value => {
+        const opt = originalOptions.find(o => o.value === value);
+        if (opt) originalSelect.appendChild(opt.cloneNode(true));
+    });
+}
+
+/* --------------------------------------------------------
+ *  CSV 檔案大小偵測
+ * -------------------------------------------------------- */
+async function detectCSVSize(file) {
+    return file.size / (1024 * 1024);
+}
+
+/* --------------------------------------------------------
+ *  IndexedDB 儲存與讀取
+ * -------------------------------------------------------- */
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("CSV_DB", 1);
+
+        request.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains("csvStore")) {
+                db.createObjectStore("csvStore", { keyPath: "id" });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function saveToIndexedDB(data) {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("csvStore", "readwrite");
+        const store = tx.objectStore("csvStore");
+
+        store.put({ id: "csvData", value: data });
+
+        tx.oncomplete = resolve;
+        tx.onerror = reject;
+    });
+}
+
+async function loadFromIndexedDB() {
+    const db = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("csvStore", "readonly");
+        const store = tx.objectStore("csvStore");
+
+        const req = store.get("csvData");
+
+        req.onsuccess = () => resolve(req.result?.value ?? null);
+        req.onerror = reject;
+    });
+}

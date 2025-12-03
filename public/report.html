@@ -22,24 +22,77 @@
     </main>
 
     <script>
-        // 讀取 localStorage
-        const csvData = JSON.parse(localStorage.getItem('csvData') || '[]');
-        const header = JSON.parse(localStorage.getItem('header') || '[]');
-        const chinese = JSON.parse(localStorage.getItem('chinese') || '[]');
+        /* --------------------------------------------------------
+         * IndexedDB helper functions
+         * -------------------------------------------------------- */
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("CSV_DB", 1);
+                request.onupgradeneeded = function (event) {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains("csvStore")) {
+                        db.createObjectStore("csvStore", { keyPath: "id" });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
 
-        const tableContainer = document.getElementById('tableContainer');
+        async function loadFromIndexedDB() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction("csvStore", "readonly");
+                const store = tx.objectStore("csvStore");
+                const req = store.get("csvData");
+                req.onsuccess = () => resolve(req.result ? req.result.value : null);
+                req.onerror = reject;
+            });
+        }
 
-        if (csvData.length === 0) {
-            tableContainer.innerHTML = '<p class="text-gray-600">沒有可顯示的資料</p>';
-        } else {
-            // 建立 Word-friendly table with inline styles
+        /* --------------------------------------------------------
+         * 載入 CSV 資料
+         * -------------------------------------------------------- */
+        async function loadCSVData() {
+            const mode = localStorage.getItem("storageMode");
+
+            if (mode === "localStorage") {
+                const data = JSON.parse(localStorage.getItem("csvData") || "[]");
+                console.log("Loaded from localStorage:", data);
+                return data;
+            }
+
+            if (mode === "indexedDB") {
+                const data = await loadFromIndexedDB() || [];
+                console.log("Loaded from IndexedDB:", data);
+                return data;
+            }
+
+            return [];
+        }
+
+        function getChineseLabel(value, chinese) {
+            const found = chinese.find(item => item.value === value);
+            return found ? found.label : value;
+        }
+
+        /* --------------------------------------------------------
+         * 建立表格
+         * -------------------------------------------------------- */
+        function renderTable(csvData, header, chinese) {
+            const tableContainer = document.getElementById("tableContainer");
+
+            if (!csvData || csvData.length === 0) {
+                tableContainer.innerHTML = '<p class="text-gray-600">沒有可顯示的資料</p>';
+                return;
+            }
+
             let tableHTML = '<table style="border-collapse: collapse; width: 100%;">';
-            tableHTML += '<thead>';
-            tableHTML += '<tr>';
-            
+            tableHTML += '<thead><tr>';
+
             const tableHeader = header.length ? header : Object.keys(csvData[0]);
-           tableHeader.forEach(col => {
-                const label = getChineseLabel(col); // 取中文 label
+            tableHeader.forEach(col => {
+                const label = getChineseLabel(col, chinese);
                 tableHTML += `<th style="border:1px solid #ccc; padding:4px; background-color:#f0f0f0; text-align:left;">${label}</th>`;
             });
 
@@ -57,9 +110,11 @@
             tableContainer.innerHTML = tableHTML;
         }
 
-        // Copy Table Button
+        /* --------------------------------------------------------
+         * 複製表格到剪貼簿
+         * -------------------------------------------------------- */
         document.getElementById('copyTableBtn').addEventListener('click', () => {
-            const table = tableContainer.querySelector('table');
+            const table = document.querySelector('#tableContainer table');
             if (!table) return alert('沒有可複製的表格！');
 
             const range = document.createRange();
@@ -71,14 +126,20 @@
             document.execCommand('copy');
             selection.removeAllRanges();
 
-            alert('表格已複製！可直接貼到 Word。');
+            alert('表格已複製！');
         });
 
-        function getChineseLabel(value) {
-            const found = chinese.find(item => item.value === value);
-            return found ? found.label : value; // fallback to original if not found
+        /* --------------------------------------------------------
+         * 初始化
+         * -------------------------------------------------------- */
+        async function init() {
+            const csvData = await loadCSVData();
+            const header = JSON.parse(localStorage.getItem('header') || '[]');
+            const chinese = JSON.parse(localStorage.getItem('chinese') || '[]');
+            renderTable(csvData, header, chinese);
         }
 
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 
 </body>

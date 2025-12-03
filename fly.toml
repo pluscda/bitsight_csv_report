@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for alexevt-01 on 2025-12-02T15:10:38+08:00
+# fly.toml app configuration file generated for bitsight-csv-report on 2025-12-03T09:26:08+08:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'alexevt-01'
-primary_region = 'sin'
+app = 'bitsight-csv-report'
+primary_region = 'nrt'
 
 [build]
 
