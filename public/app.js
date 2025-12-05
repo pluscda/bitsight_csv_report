@@ -58,7 +58,7 @@ const postCSV = async () => {
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '處理中...';
 
-    updateCreateTableBtn();
+    updateCreateTableBtn(0);
 
     const response = await fetch('/upload-csv', { method: 'POST', body: formData });
     const data = await response.json();
@@ -114,7 +114,7 @@ ${firstRecord ? JSON.stringify(firstRecord, null, 2) : "（無資料）"}
         </pre>
     `;
 
-    updateCreateTableBtn();
+    updateCreateTableBtn(data.totalRecords);
 };
 
 csvInput.addEventListener('change', postCSV);
@@ -130,17 +130,8 @@ document.getElementById("riskVector").addEventListener("change", () => {
  * -------------------------------------------------------- */
 const createTableBtn = document.getElementById('createTableBtn');
 
-function updateCreateTableBtn() {
-    const pre = document.querySelector('#result pre');
-    let hasData = false;
-
-    try {
-        if (pre) {
-           hasData = true;
-        }
-    } catch {
-        hasData = false;
-    }
+function updateCreateTableBtn(hasRecord) {
+    let hasData = Number(hasRecord) > 0 
 
     if (hasData) {
         createTableBtn.disabled = false;
